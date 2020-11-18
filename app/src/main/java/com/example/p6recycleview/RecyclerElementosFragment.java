@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RatingBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -37,35 +38,33 @@ public class RecyclerElementosFragment extends Fragment {
         elementosViewModel = new ViewModelProvider(requireActivity()).get(ElementosViewModel.class);
         navController = Navigation.findNavController(view);
 
-        // crear el Adaptador
         ElementosAdapter elementosAdapter = new ElementosAdapter();
 
-        // asociar el Adaptador con el RecyclerView
         binding.recyclerView.setAdapter(elementosAdapter);
 
-        // obtener el array de Elementos, y pasarselo al Adaptador
         elementosViewModel.obtener().observe(getViewLifecycleOwner(), new Observer<List<Elemento>>() {
             @Override
             public void onChanged(List<Elemento> elementos) {
                 elementosAdapter.establecerLista(elementos);
             }
         });
+
+
     }
 
     class ElementosAdapter extends RecyclerView.Adapter<ElementoViewHolder> {
 
-        // referencia al Array que obtenemos del ViewModel
+
         List<Elemento> elementos;
 
-        // crear un nuevo ViewHolder
+
         @NonNull
         @Override
         public ElementoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             return new ElementoViewHolder(ViewholderElementoBinding.inflate(getLayoutInflater(), parent, false));
         }
 
-        // rellenar un ViewHolder en una posición del Recycler con los datos del elemento que
-        // esté en esa misma posición en el Array
+
         @Override
         public void onBindViewHolder(@NonNull ElementoViewHolder holder, int position) {
 
@@ -73,22 +72,44 @@ public class RecyclerElementosFragment extends Fragment {
 
             holder.binding.nombre.setText(elemento.nombre);
             holder.binding.valoracion.setRating(elemento.valoracion);
+
+            holder.binding.valoracion.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
+                @Override
+                public void onRatingChanged(RatingBar ratingBar, float rating, boolean fromUser) {
+                    if(fromUser) {
+                        elementosViewModel.actualizar(elemento, rating);
+                    }
+                }
+            });
+
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+                    elementosViewModel.seleccionar(elemento);
+                    navController.navigate(R.id.action_recyclerElementosFragment_to_mostrarElementoFragment);
+                }
+            });
         }
 
-        // informar al Recycler de cuántos elementos habrá en la lista
+
         @Override
         public int getItemCount() {
             return elementos != null ? elementos.size() : 0;
         }
 
-        // establecer la referencia a la lista, y notificar al Recycler para que se regenere
+
         public void establecerLista(List<Elemento> elementos){
             this.elementos = elementos;
             notifyDataSetChanged();
         }
+
+        public Elemento obtenerElemento(int posicion){
+            return elementos.get(posicion);
+        }
     }
 
-    // Clase para inicializar el ViewBinding en los ViewHolder
+
     class ElementoViewHolder extends RecyclerView.ViewHolder {
         private final ViewholderElementoBinding binding;
 
